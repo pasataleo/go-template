@@ -10,14 +10,9 @@ sedi() {
   fi
 }
 
-remote=$(git remote get-url origin)
-if [[ "$remote" =~ github\.com[:/]([^/]+)/([^/.]+) ]]; then
-  username="${BASH_REMATCH[1]}"
-  repo="${BASH_REMATCH[2]}"
-else
-  repo=$(basename "$(git rev-parse --show-toplevel)")
-  read -rp "GitHub username: " username
-fi
+toplevel=$(git rev-parse --show-toplevel)
+repo=$(basename "$toplevel")
+username=$(basename "$(dirname "$toplevel")")
 module="github.com/${username}/${repo}"
 
 sedi "s|github.com/pasataleo/go-template|${module}|g" go.mod main.go
