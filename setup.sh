@@ -10,9 +10,18 @@ sedi() {
   fi
 }
 
-toplevel=$(git rev-parse --show-toplevel)
-repo=$(basename "$toplevel")
-username=$(basename "$(dirname "$toplevel")")
+# Derive owner/repo from the origin remote so this works from worktrees, where
+# the checkout directory is named after the branch rather than the repo.
+if remote=$(git remote get-url origin 2>/dev/null); then
+  remote=${remote%.git}
+  repo=${remote##*/}
+  owner=${remote%/*}
+  username=${owner##*[:/]}
+else
+  toplevel=$(git rev-parse --show-toplevel)
+  repo=$(basename "$toplevel")
+  username=$(basename "$(dirname "$toplevel")")
+fi
 module="github.com/${username}/${repo}"
 
 sedi "s|github.com/pasataleo/go-template|${module}|g" go.mod main.go
@@ -35,7 +44,11 @@ else
   mv .github/workflows/release-exe.yml .github/workflows/release.yml
 fi
 
-cat > .git/hooks/pre-commit << 'HOOK'
+# Resolves to the shared hooks directory in both regular clones and worktrees.
+hooks=$(git rev-parse --path-format=absolute --git-path hooks)
+mkdir -p "$hooks"
+
+cat > "$hooks/pre-commit" << 'HOOK'
 #!/bin/bash
 make all || exit 1
 
@@ -44,6 +57,6 @@ if ! git diff --quiet; then
   exit 1
 fi
 HOOK
-chmod +x .git/hooks/pre-commit
+chmod +x "$hooks/pre-commit"
 
 rm -- "$0"
