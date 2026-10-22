@@ -14,7 +14,7 @@ This will:
 
 - Update the Go module path to match your repository name
 - Configure the project as an executable or library
-- Install a git pre-commit hook that runs `make all`
+- Install a git pre-commit hook that runs `make all` against the staged changes and fails if it modifies any files
 - Set up the release workflow for the chosen project type
 - Delete itself
 
@@ -24,17 +24,19 @@ This will:
 - `make tidy` — run `go mod tidy`
 - `make generate` — run `go generate ./...`
 - `make fmt` — run `go fmt ./...`
-- `make lint` — install and run golangci-lint
+- `make lint` — run golangci-lint, installing the pinned version if needed
 - `make test` — run `go test ./...`
 - `make build` — build the binary (or verify compilation for libraries); local builds report version `dev`
 
 ## Releasing
 
-Update `CHANGELOG.md` with the changes for the release, then tag the commit:
+`CHANGELOG.md` keeps the notes for every release, newest first. Each release has its own `# vX.Y.Z` section; start a new one by copying the commented-out section template to the top of the file.
+
+Once the section for the release is merged, tag the commit:
 
 ```sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The release workflow will create a GitHub release using the contents of `CHANGELOG.md` and clear it ready for the next release.
+The release workflow runs the build checks, then creates a GitHub release using the notes under the matching heading in `CHANGELOG.md`. It fails if that section is missing or contains only comments.

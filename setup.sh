@@ -50,10 +50,24 @@ mkdir -p "$hooks"
 
 cat > "$hooks/pre-commit" << 'HOOK'
 #!/bin/bash
-make all || exit 1
+set -euo pipefail
 
-if ! git diff --quiet; then
-  echo "pre-commit: files were modified by make all, please stage the changes and commit again"
+# Check exactly what is being committed. If there are unstaged or untracked
+# changes, export the index to a temporary directory and check that instead, so
+# files left out of the commit can't make the checks pass or fail.
+dir=$(pwd)
+if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+  dir=$(mktemp -d)
+  trap 'rm -rf "$dir"' EXIT
+  git checkout-index --all --prefix="$dir/"
+fi
+
+(cd "$dir" && make all)
+
+# Compare the checked tree against the index to see if make all changed it.
+if ! git --work-tree="$dir" diff --quiet ||
+   [[ -n "$(git --work-tree="$dir" ls-files --others --exclude-standard)" ]]; then
+  echo "pre-commit: make all modified files, please run make all, stage the changes and commit again"
   exit 1
 fi
 HOOK
