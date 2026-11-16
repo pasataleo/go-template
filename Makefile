@@ -1,6 +1,6 @@
 .PHONY: all test build lint lint_install tidy generate fmt
 
-GOLANGCI_LINT_VERSION := v$(shell sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' .golangci.json)
+GOLANGCI_LINT_VERSION := v$(shell jq -r '.["golangci-lint"].version' .tool-versions.json)
 
 all: .git/hooks/pre-commit tidy generate fmt lint test build
 
@@ -12,7 +12,7 @@ test:
 	go test ./...
 
 build:
-	go build -o bin/go-template main.go
+	go build ./...
 
 tidy:
 	go mod tidy
